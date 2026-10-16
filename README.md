@@ -49,7 +49,7 @@ This library can be installed directly from the source files:
 
 The documentation page is available [here](https://pymodulation.github.io/pymodulation/). Instructions to build the documentation page are described below.
 
-Contributing instructions are also available [here](https://github.com/pymodulation/pyngham/blob/main/CONTRIBUTING.md).
+Contributing instructions are also available [here](https://github.com/pymodulation/pymodulation/blob/main/CONTRIBUTING.md).
 
 ### Dependencies
 
