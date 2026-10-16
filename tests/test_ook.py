@@ -211,7 +211,7 @@ def test_estimate_levels_returns_sorted_levels(ook_modulator):
 
     assert np.all(np.diff(estimated) > 0)
 
-def test_find_symbol_offset(ook_modulator):
+def test_find_symbol_offset_single_phase(ook_modulator):
     """Finds the correct offset"""
     sps = 8
     offset = 3

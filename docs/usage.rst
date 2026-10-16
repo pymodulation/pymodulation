@@ -35,7 +35,13 @@ The ASK modulation can be used through the *ASK* class, using the modulate and d
 
     print("Demodulated bits:", list(map(int, bits)))
 
-The *modulate* method returns the IQ samples of the generated signal, the corresponding sampling rate, and the signal duration in seconds. The *demodulate* method allows the demodulation of a ASK signal, taking the corresponding IQ samples as input, and producing as output the data bitstream contained in the signal and the baseband signal samples (in NRZ format).
+The *modulate* method returns complex baseband IQ samples, the sampling rate in samples per second, and the signal duration in seconds. The constructor parameter *baud* denotes the bit rate. Each symbol carries ``log2(order)`` bits, and *L* specifies samples per symbol, giving ``fs = L * baud / log2(order)``. For order 8, zeros are added to complete the last symbol; the duration includes this padding.
+
+The *demodulate* method takes symbol-aligned IQ samples and their sampling rate and returns only a list of bits, including final-symbol padding. Use the known payload length to trim the result, for example ``bits = bits[:len(data) * 8]``. The sampling rate must be a positive integer multiple of the symbol rate, and the input must contain complete symbols.
+
+By default, demodulation averages the envelope over each symbol and uses the transmitter's normalized amplitude levels from 0 to 1. Calibrate receiver gain before decoding, or pass the known received amplitudes through *levels*, for example ``levels=[0, 2/3, 4/3, 2]`` for a 4-ASK signal with amplitude gain 2. Blind level estimation remains available with ``use_kmeans=True``, but requires all constellation levels to be present; it cannot reliably infer missing levels from a payload. The default is now ``use_kmeans=False``.
+
+No additional low-pass filter is applied by default. An optional *lpf_cutoff* in Hz must be positive and below half the sampling rate. The symbol averaging itself provides rectangular matched filtering. The *modulate_time_domain* method returns a real carrier signal, time values in seconds, the sampling rate, and the duration; its carrier frequency is the symbol rate.
 
 OOK
 ***

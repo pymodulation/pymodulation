@@ -30,6 +30,9 @@ _ASK_DEFAULT_OVERSAMPLING_FACTOR=100
 class ASK(Modulation):
     """
     ASK modulator/demodulator.
+
+    baud is the bit rate in bps. Symbols use log2(order) bits and normalized
+    amplitudes from 0 to 1. The last symbol is zero-padded when necessary.
     """
 
     def __init__(self, order, baud):
@@ -50,6 +53,35 @@ class ASK(Modulation):
 
         self.set_order(order)
 
+    def set_baudrate(self, baud):
+        """
+        Set a finite positive bit rate in bits per second.
+
+        :param baud: The new baudrate in bps.
+        :type: int
+
+        :return None
+        """
+        if (not isinstance(baud, (int, float, np.integer, np.floating)) or isinstance(baud, (bool, np.bool_)) or not np.isfinite(baud) or baud <= 0):
+            raise ValueError("Bit rate must be a finite positive number")
+
+        super().set_baudrate(baud)
+
+    def _validate_sps(self, sps):
+        """
+        """
+        if (isinstance(sps, (bool, np.bool_)) or not isinstance(sps, (int, np.integer)) or sps < 1):
+            raise ValueError("Samples per symbol must be a positive integer")
+
+    def _data_bits(self, data):
+        """
+        """
+        data = list(data)
+        if any(isinstance(byte, (bool, np.bool_)) or not isinstance(byte, (int, np.integer)) or not 0 <= byte <= 255 for byte in data):
+            raise ValueError("Data must contain integer bytes from 0 to 255")
+
+        return np.array(self._int_list_to_bit_list(data), dtype=np.uint8)
+
     def set_order(self, order):
         """
         Sets the order of the ASK modulation.
@@ -61,7 +93,7 @@ class ASK(Modulation):
 
         :return: None
         """
-        if order not in (2, 4, 8):
+        if isinstance(order, (bool, np.bool_)) or not isinstance(order, (int, np.integer)) or order not in (2, 4, 8):
             raise ValueError("ASK order must be 2, 4 or 8!")
 
         self._order = order
@@ -82,36 +114,18 @@ class ASK(Modulation):
         :param data: List of integers with the data bytes.
         :type: list
 
-        :param L: Oversampling factor (Tb/Ts)
+        :param L: Positive integer samples per symbol.
         :type: int
 
         :return: Tuple of (IQ samples, sample rate in Hz, transmission duration in seconds)
         :rtype: tuple(np.ndarray, float, float)
         """
-        bits_per_symbol = int(np.log2(self.get_order()))
+        self._validate_sps(L)
+        amplitudes = self._bits_to_symbols(self._data_bits(data))
+        iq = np.repeat(amplitudes, L).astype(np.complex64)
+        fs = L * self.get_baudrate() / int(np.log2(self.get_order()))
 
-        # Convert to array of bits
-        bits = np.array(self._int_list_to_bit_list(data))
-
-        # Bits -> symbol indices
-        symbols = bits.reshape(-1, bits_per_symbol)
-        # Treat each row as a big-endian binary number
-        weights = 1 << np.arange(bits_per_symbol - 1, -1, -1)
-        indices = symbols @ weights  # Integer symbol index in [0, order-1]
-
-        # Symbol index -> amplitude (Normalize)
-        amplitudes = indices / (self.get_order() - 1)  # float in [0, 1]
-
-        # Pulse shaping: rectangular (repeat each amplitude)
-        envelope = np.repeat(amplitudes, L).astype(np.float32)
-
-        # Build baseband IQ (Q = 0 for real ASK)
-        iq = envelope.astype(np.complex64)
-
-        fs = L * self.get_baudrate()                # Sample rate
-        dur = len(data) * 8 /self.get_baudrate()    # Signal duration
-
-        return iq, fs, dur
+        return iq, fs, len(iq) / fs
 
     def modulate_time_domain(self, data: list, sps: int = _ASK_DEFAULT_OVERSAMPLING_FACTOR, carrier_phase: float = 0.0) -> tuple:
         """
@@ -138,91 +152,76 @@ class ASK(Modulation):
         :return dur: Signal duration in seconds.
         :rtype dur: float
         """
-        # Derive sample rate and time base from baudrate and sps,
-        # mirroring: fs = sps * fc  and  Ts = 1/fs
-        fc = self.get_baudrate()    # Carrier freq = symbol rate in Hz
-        fs = sps * fc               # Sample rate in S/s
-        Ts = 1.0 / fs               # Sample period
+        samples, fs, dur = self.modulate(data, sps)
+        fc = self.get_baudrate() / int(np.log2(self.get_order()))
+        t = np.arange(len(samples)) / fs
+        s_t = samples.real.astype(np.float64) * np.cos(2 * np.pi * fc * t + carrier_phase)
 
-        # Step 1: bytes -> bits -> per-symbol amplitudes
-        bits = np.array(self._int_list_to_bit_list(data))
-        amplitudes = self._bits_to_symbols(bits)
+        return s_t, t, int(fs) if fs.is_integer() else fs, dur
 
-        # Step 2: baseband envelope — rectangular pulse shaping
-        envelope = np.repeat(amplitudes, sps).astype(np.float64)
-
-        # Step 3: time base (matches GFSK convention: Ts * arange(len(signal)))
-        t = Ts * np.arange(start=0, stop=len(envelope))
-        dur = float(t[-1])          # Signal duration in seconds
-
-        # Step 4: time-domain carrier multiplication
-        # For pure ASK, Q = 0, so s(t) reduces to: envelope(t) * cos(2*pi*fc*t + φ₀)
-        s_t = envelope * np.cos(2.0 * np.pi * fc * t + carrier_phase)
-
-        return s_t, t, int(fs), dur
-
-    def demodulate(self, samples: np.ndarray, fs, lpf_cutoff=1000.0, use_kmeans=True) -> list:
+    def demodulate(self, samples: np.ndarray, fs, lpf_cutoff=None, use_kmeans=False, levels=None) -> list:
         """
-        Demodulate ASK IQ samples into bits.
+        Demodulate complete, symbol-aligned baseband symbols into bits.
 
-        :param samples: Base band IQ samples.
-        :type: np.ndarray
+        The default detector averages the envelope over each symbol and uses
+        the normalized transmitter levels. Input gain must be calibrated.
+        Padding bits in the last symbol are retained.
 
-        :param fs: Sample rate in S/s
-        :type: int
+        :param samples: One-dimensional finite IQ samples of complete symbols.
+        :type samples: list[int]
 
-        :return: Demodulated bits (0 or 1).
+        :param fs: Sample rate; a positive integer multiple of the symbol rate.
+        :type fs: in
+
+        :param lpf_cutoff: Optional low-pass cutoff in Hz, below fs / 2. None uses rectangular symbol integration without additional filtering.
+        :type lpf_cutoff: int
+
+        :param use_kmeans: Opt-in blind level estimation. Requires a payload containing all amplitude levels; cannot resolve missing levels.
+        :type use_kmeans: bool
+
+        :param levels: Optional calibrated, strictly increasing nonnegative amplitude levels, one per constellation point. Overrides k-means.
+        :type levels: list[int]
+
+        :return: List of bits, including final-symbol padding.
+        :rtype:
         """
-        bits_per_symbol = int(np.log2(self.get_order()))
-        samples_per_symbol = int(fs/self.get_baudrate())
+        bps = int(np.log2(self.get_order()))
+        if (not isinstance(fs, (int, float, np.integer, np.floating)) or isinstance(fs, (bool, np.bool_)) or not np.isfinite(fs) or fs <= 0):
+            raise ValueError("Sample rate must be a finite positive number")
 
-        # Envelope extraction
-        envelope_raw = np.abs(samples).astype(np.float32)
+        ratio = fs / (self.get_baudrate() / bps)
+        sps = round(ratio)
+        if sps < 1 or not np.isclose(ratio, sps, rtol=1e-9, atol=1e-9):
+            raise ValueError("Sample rate must be an integer multiple of symbol rate")
 
-        # Low-pass filter
-        if samples_per_symbol is not None:
-            symbol_rate = fs / samples_per_symbol
-        else:
-            # Rough estimate for filter design; refined below
-            symbol_rate = fs / 10.0
+        samples = np.asarray(samples)
+        if samples.ndim != 1 or samples.size % sps or not np.all(np.isfinite(samples)):
+            raise ValueError("Samples must be a finite one-dimensional array of complete symbols")
 
-        if lpf_cutoff is None:
-            lpf_cutoff = 0.75 * symbol_rate
-            # Clamp to usable range
-            lpf_cutoff = max(lpf_cutoff, fs * 0.01)
-            lpf_cutoff = min(lpf_cutoff, fs * 0.45)
+        if lpf_cutoff is not None:
+            if (not np.isscalar(lpf_cutoff) or not np.isreal(lpf_cutoff) or not np.isfinite(lpf_cutoff) or not 0 < lpf_cutoff < fs / 2):
+                raise ValueError("Filter cutoff must be positive and below fs / 2")
 
-        envelope = self._lowpass_filter(envelope_raw, lpf_cutoff, fs)
+        if levels is not None:
+            levels = np.asarray(levels, dtype=float)
+            if (levels.shape != (self.get_order(),) or not np.all(np.isfinite(levels)) or np.any(levels < 0) or np.any(np.diff(levels) <= 0)):
+                raise ValueError("Levels must be finite, nonnegative and strictly increasing")
 
-        # Step 4 – Symbol timing recovery
-        if samples_per_symbol is None:
-            sps_max = max(2, len(envelope) // 4)
-            samples_per_symbol = estimate_samples_per_symbol(envelope, fs, sps_max=min(sps_max, 512))
+        if not samples.size:
+            return []
 
-            # Now that we have SPS, re-filter with correct cutoff
-            if lpf_cutoff is None:
-                lpf_cutoff = 0.75 * (fs / samples_per_symbol)
-                lpf_cutoff = max(lpf_cutoff, fs * 0.01)
-                lpf_cutoff = min(lpf_cutoff, fs * 0.45)
-                envelope = self._lowpass_filter(envelope_raw, lpf_cutoff, fs)
+        envelope = np.abs(samples).astype(np.float32)
+        if lpf_cutoff is not None:
+            envelope = self._lowpass_filter(envelope, lpf_cutoff, fs)
 
-        symbol_offset = self._find_symbol_offset(envelope, samples_per_symbol)
+        symbol_amps = envelope.reshape(-1, sps).mean(axis=1)
 
-        symbol_amps = envelope[symbol_offset::samples_per_symbol].astype(np.float32)
+        if levels is None:
+            levels = (self._estimate_levels(symbol_amps, self.get_order()) if use_kmeans else np.linspace(0, 1, self.get_order()))
 
-        # Step 5 & 6 – Amplitude slicing / decision
-        if use_kmeans:
-            levels = self._estimate_levels(symbol_amps, self.get_order())
-        else:
-            lo, hi = float(symbol_amps.min()), float(symbol_amps.max())
-            levels = np.linspace(lo, hi, self.get_order(), dtype=np.float32)
+        indices = self._decide_symbols(symbol_amps, levels)
 
-        symbol_indices = self._decide_symbols(symbol_amps, levels)
-
-        # Step 7 – Symbols -> bits
-        bits = self._symbols_to_bits(symbol_indices, bits_per_symbol, msb_first=True)
-
-        return list(bits)
+        return self._symbols_to_bits(indices, bps).astype(int).tolist()
 
     def _lowpass_filter(self, signal: np.ndarray, cutoff: float, sample_rate: float, num_taps: int = 64) -> np.ndarray:
         """
@@ -247,12 +246,14 @@ class ASK(Modulation):
         # filtfilt needs signal length > padlen ≈ 3 * num_taps; clamp accordingly
         max_taps = max(3, (len(signal) // 3) - 1)
         num_taps = min(num_taps, max_taps)
+
         if num_taps % 2 == 0:
             num_taps -= 1        # firwin needs odd length for symmetric filter
+
         num_taps = max(num_taps, 3)
         taps = firwin(num_taps, cutoff / nyq, window="hann")
 
-        return filtfilt(taps, [1.0], signal).astype(np.float32)
+        return filtfilt(taps, [1.0], signal, padlen=min(3 * len(taps), len(signal) - 1)).astype(np.float32)
 
     def _estimate_levels(self, symbol_amps: np.ndarray, order: int, min_cluster_ratio: float = 0.5) -> np.ndarray:
         """

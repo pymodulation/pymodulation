@@ -236,7 +236,7 @@ def test_estimate_levels_all_orders(ask_modulator, order):
 
     np.testing.assert_allclose(estimated, true_levels, atol=0.1)
 
-def test_find_symbol_offset(ask_modulator):
+def test_find_symbol_offset_single_phase(ask_modulator):
     """Finds the correct offset"""
     sps = 8
     offset = 3
@@ -598,3 +598,65 @@ def test_modulate_time_domain_phase_first_sample_parametrized(ask_modulator, pha
     signal, _, _, _ = ask_modulator.modulate_time_domain([0xFF], _SPS, carrier_phase=phase)
 
     assert signal[0] == pytest.approx(np.cos(phase), abs=1e-12)
+
+@pytest.mark.parametrize('order', [2, 4, 8])
+@pytest.mark.parametrize('sps', [1, 2, 3, 16])
+@pytest.mark.parametrize('data', [[], [255], [0], [0x66] * 10, [0x55, 0xaa] * 10, list(range(256))])
+def test_roundtrip_all_orders_and_payload_lengths(order, sps, data):
+    modem = ASK(order, 1000)
+    samples, fs, duration = modem.modulate(data, sps)
+    bps = int(np.log2(order))
+    expected = modem._int_list_to_bit_list(data)
+    expected += [0] * (-len(expected) % bps)
+    assert fs == pytest.approx(sps * 1000 / bps)
+    assert len(samples) == len(expected) // bps * sps
+    assert duration == pytest.approx(len(expected) / 1000)
+    assert duration == pytest.approx(len(samples) / fs)
+    assert ASK(order, 1000).demodulate(samples, fs) == expected
+    signal, t, td_fs, td_duration = modem.modulate_time_domain(data, sps)
+    assert td_fs == fs
+    assert td_duration == duration
+    np.testing.assert_allclose(t, np.arange(len(samples)) / fs)
+    assert len(signal) == len(samples)
+
+def test_calibrated_levels_with_missing_amplitudes():
+    modem = ASK(4, 1000)
+    samples, fs, _ = modem.modulate([0x66] * 10, 10)
+    expected = modem._int_list_to_bit_list([0x66] * 10)
+    assert modem.demodulate(samples * 2, fs, levels=np.linspace(0, 2, 4)) == expected
+
+@pytest.mark.parametrize('order', [2, 4, 8])
+def test_roundtrip_complex_noise(order):
+    modem = ASK(order, 1200)
+    data = list(range(256))
+    samples, fs, _ = modem.modulate(data, 16)
+    rng = np.random.default_rng(42)
+    noise = rng.normal(0, .01, len(samples)) + 1j * rng.normal(0, .01, len(samples))
+    expected = modem._int_list_to_bit_list(data)
+    expected += [0] * (-len(expected) % int(np.log2(order)))
+    assert modem.demodulate(samples + noise, fs) == expected
+
+def test_optional_filter_on_short_payload():
+    modem = ASK(8, 100)
+    samples, fs, _ = modem.modulate([0], 1)
+    assert modem.demodulate(samples, fs, lpf_cutoff=fs / 4) == [0] * 9
+
+@pytest.mark.parametrize('baud', [0, -1, np.inf, np.nan, True])
+def test_invalid_bit_rates(baud):
+    with pytest.raises(ValueError):
+        ASK(4, baud)
+
+@pytest.mark.parametrize('data,sps', [([-1], 2), ([256], 2), ([1.5], 2), ([True], 2), ([0], 0), ([0], 1.5)])
+def test_invalid_modulation_inputs(data, sps):
+    with pytest.raises(ValueError):
+        ASK(4, 1000).modulate(data, sps)
+
+@pytest.mark.parametrize('samples,fs', [([0], 1000), ([[0]], 500), ([np.nan], 500), ([], 0), ([], 750)])
+def test_invalid_demodulation_inputs(samples, fs):
+    with pytest.raises(ValueError):
+        ASK(4, 1000).demodulate(samples, fs)
+
+@pytest.mark.parametrize('levels', [[0, 1], [0, 1, 1, 2], [-1, 0, 1, 2], [0, 1, 2, np.nan]])
+def test_invalid_calibrated_levels(levels):
+    with pytest.raises(ValueError):
+        ASK(4, 1000).demodulate([0], 500, levels=levels)
