@@ -5,8 +5,8 @@
 <a href="https://pypi.org/project/pymodulation/">
     <img src="https://img.shields.io/pypi/v/pymodulation?style=for-the-badge">
 </a>
-<a href="https://doi.org/10.5281/zenodo.18202698">
-    <img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo.18202698-blue?style=for-the-badge">
+<a href="https://doi.org/10.5281/zenodo.18202697">
+    <img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo.18202697-blue?style=for-the-badge">
 </a>
 <a href="https://pypi.org/project/pymodulation/">
     <img src="https://img.shields.io/pypi/pyversions/pymodulation?style=for-the-badge">
@@ -30,6 +30,9 @@ The following modulations are currently supported:
 
 * GFSK/GMSK
 * BPSK
+* ASK/OOK
+* QPSK
+* LoRa
 
 ## Dependencies
 
@@ -46,7 +49,7 @@ This library can be installed directly from the source files:
 
 The documentation page is available [here](https://pymodulation.github.io/pymodulation/). Instructions to build the documentation page are described below.
 
-Contributing instructions are also available [here](https://github.com/pymodulation/pyngham/blob/main/CONTRIBUTING.md).
+Contributing instructions are also available [here](https://github.com/pymodulation/pymodulation/blob/main/CONTRIBUTING.md).
 
 ### Dependencies
 
@@ -64,14 +67,13 @@ If you use PyModulation in your academic work or project, you can cite it:
 
 ```
 @misc{marcelino2026,
-    author       = {Marcelino, Gabriel Mariano},
+    author       = {Marcelino, Gabriel and Augusto Porto Freitas, Carlos},
     title        = {PyModulation},
-    month        = jan,
+    month        = jun,
     year         = 2026,
-    publisher    = {Zenodo},
-    version      = {v0.1},
-    doi          = {10.5281/zenodo.18202698},
-    url          = {https://doi.org/10.5281/zenodo.18202698},
+    howpublished = {Zenodo},
+    doi          = {10.5281/zenodo.18202697},
+    url          = {https://doi.org/10.5281/zenodo.18202697},
 }
 ```
 
