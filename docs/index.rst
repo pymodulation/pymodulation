@@ -10,7 +10,7 @@ PyModulation is a Python library that implements a collection of digital modulat
 
 The project is fully open source and is available in a `GitHub repository <https://github.com/pymodulation/pymodulation>`_. All contributions are welcome! If you found a bug, developed a new feature, or want to improve the documentation, there are two ways to do so: open an issue describing the suggested modification, or by opening a pull request. More information are available in the `CONTRIBUTING file <https://github.com/pymodulation/pymodulation/blob/main/CONTRIBUTING.md>`_.
 
-Any questions or suggestions can also be addressed to Gabriel Mariano Marcelino <`gabriel.mm8@gmail.com <mailto:gabriel.mm8@gmail.com>`_>.
+Any questions or suggestions can also be addressed to Gabriel Mariano Marcelino <`contact@gabrielmm.com <mailto:contact@gabrielmm.com>`_>.
 
 Contents
 ========
