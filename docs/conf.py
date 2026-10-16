@@ -22,17 +22,13 @@
 
 import sphinx_rtd_theme
 
-# -- Project information -----------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
-
+# Project information
 project = 'PyModulation'
 copyright = 'Copyright The PyModulation Contributors'
 author = 'PyModulation Developers'
 release = 'v0.2'
 
-# -- General configuration ---------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
-
+# General configuration
 extensions = [
     'sphinx_rtd_theme',
 ]
@@ -40,8 +36,14 @@ extensions = [
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
-# -- Options for HTML output -------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
-
+# Options for HTML output
 html_theme = 'sphinx_rtd_theme'
-html_static_path = ['_static']
+html_static_path = ['img']
+html_logo = "img/pymodulation.png"
+html_theme_options = {
+    'logo_only': True,
+}
+
+# Navigation bar title
+html_title = "PyModulation"
+html_short_title = "PyModulation"
