@@ -125,6 +125,30 @@ This modulation can be used in a manner almost identical to GFSK modulation, wit
 
     print("Demodulated bits:", list(map(int, bits)))
 
+QPSK
+====
+
+The QPSK modulation can be used through the *QPSK* class, using the modulate and demodulate methods. An example of usage can be seen in the code below:
+
+.. code-block:: python
+
+    from pymodulation import QPSK
+
+    mod = QPSK(9600)    # Bit rate = 9600 bps; symbol rate = 4800 baud
+
+    data = list(range(100))
+
+    samples, fs, dur = mod.modulate(data)
+
+    print("IQ Samples:", samples[:10])
+
+    bits = mod.demodulate(samples, fs)
+
+    print("Demodulated bits:", list(map(int, bits)))
+
+The *modulate* method returns the IQ samples of the generated signal, the corresponding sampling rate, and the signal duration in seconds. The *demodulate* method takes the IQ samples and their sampling rate and returns a list of recovered bits (0 or 1).
+
+The constructor parameter *baud* specifies the bit rate in bits per second. Each QPSK symbol carries two bits, so the symbol rate is *baud / 2*. The optional *L* argument to *modulate* specifies samples per symbol (default 100), giving a sample rate of ``L * baud / 2``. For byte input, the output contains ``len(data) * 4 * L`` samples. The *modulate_time_domain* method returns the baseband samples and their integer sample indices.
 
 LoRa
 ====
