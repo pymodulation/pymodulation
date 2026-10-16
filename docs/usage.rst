@@ -149,3 +149,33 @@ The QPSK modulation can be used through the *QPSK* class, using the modulate and
 The *modulate* method returns the IQ samples of the generated signal, the corresponding sampling rate, and the signal duration in seconds. The *demodulate* method takes the IQ samples and their sampling rate and returns a list of recovered bits (0 or 1).
 
 The constructor parameter *baud* specifies the bit rate in bits per second. Each QPSK symbol carries two bits, so the symbol rate is *baud / 2*. The optional *L* argument to *modulate* specifies samples per symbol (default 100), giving a sample rate of ``L * baud / 2``. For byte input, the output contains ``len(data) * 4 * L`` samples. The *modulate_time_domain* method returns the baseband samples and their integer sample indices.
+
+LoRa
+====
+
+The *LoRa* class takes a positive bandwidth in Hz and a spreading factor from 7 to 12. The *modulate* method accepts integer bytes from 0 to 255 and an optional positive integer oversampling factor *L* (samples per chip, default 100). It returns complex baseband IQ samples, the sample rate in samples per second, and the transmission duration in seconds, including final-symbol padding.
+
+.. code-block:: python
+
+    from pymodulation import LoRa
+
+    mod = LoRa(bw=125000, sf=7)
+    data = [0x48, 0x65, 0x6C, 0x6C, 0x6F]  # "Hello"
+
+    samples, fs, dur = mod.modulate(data, L=4)
+    print("Sample rate:", fs)
+    print("Duration:", dur)
+
+    bits = mod.demodulate(samples, fs)
+    # Use the known payload length to remove final-symbol padding.
+    bits = bits[:len(data) * 8]
+    recovered_data = [
+        int("".join(map(str, bits[i:i + 8])), 2)
+        for i in range(0, len(bits), 8)
+    ]
+    print("Demodulated data:", recovered_data)
+    assert recovered_data == data
+
+The *demodulate* method returns a list of bits, including any zeros used to pad the final SF-bit symbol. The payload length must be known separately to remove this padding. Samples must form a one-dimensional array of complete, aligned symbols, and *fs* must be a positive integer multiple of the configured bandwidth. The transmitter and receiver must use the same bandwidth and spreading factor.
+
+Use *set_bandwidth* and *set_spreading_factor* to change the configuration; both update the derived timing and uncoded bit rate. The corresponding values are available through *get_bandwidth*, *get_spreading_factor*, and *get_baudrate*.
