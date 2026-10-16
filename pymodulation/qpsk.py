@@ -29,6 +29,9 @@ _QPSK_DEFAULT_OVERSAMPLING_FACTOR = 100
 class QPSK(Modulation):
     """
     QPSK modulator/demodulator.
+
+    The inherited baud parameter denotes the bit rate in bits per second.
+    Each symbol carries two bits, so the symbol rate is baud / 2.
     """
 
     # Gray-coded QPSK constellation: dibit -> complex symbol
@@ -46,7 +49,7 @@ class QPSK(Modulation):
         :param data: List of integers with the data bytes.
         :type: list
 
-        :param L: Oversampling factor (Tb/Ts)
+        :param L: Samples per symbol (sample rate = L * baud / 2).
         :type: int
 
         :return: Tuple of (IQ samples, sample rate in Hz, transmission duration in seconds)
@@ -67,16 +70,18 @@ class QPSK(Modulation):
         """
         Generates the QPSK modulated signal in time domain (baseband).
 
+        N is the number of QPSK symbols: len(data) * 8 / 2 for byte input.
+
         :param data: List of integers with the data bytes.
         :type: list
 
-        :param L: Oversampling factor (Tb/Ts)
+        :param L: Samples per symbol (sample rate = L * baud / 2).
         :type: int
 
         :return: Baseband signal in time domain (length N*L).
         :rtype: np.ndarray
 
-        :return: Discrete time base (length N*L).
+        :return: Sample indices from 0 to N*L - 1 (length N*L).
         :rtype: np.ndarray
         """
         bits = self._int_list_to_bit_list(data)
