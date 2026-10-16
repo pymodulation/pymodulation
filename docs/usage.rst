@@ -98,7 +98,7 @@ The GFSK modulation can be used through the *GFSK* class, using the modulate and
 
     print("IQ Samples:", samples[:10])
 
-    bits, bb_sig = mod.demodulate(fs, samples)
+    bits, bb_sig = mod.demodulate(samples, fs)
 
     print("Demodulated bits:", list(map(int, bits)))
 
@@ -121,7 +121,7 @@ This modulation can be used in a manner almost identical to GFSK modulation, wit
 
     print("IQ Samples:", samples[:10])
 
-    bits, bb_sig = mod.demodulate(fs, samples)
+    bits, bb_sig = mod.demodulate(samples, fs)
 
     print("Demodulated bits:", list(map(int, bits)))
 
