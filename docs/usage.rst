@@ -179,3 +179,5 @@ The *LoRa* class takes a positive bandwidth in Hz and a spreading factor from 7 
 The *demodulate* method returns a list of bits, including any zeros used to pad the final SF-bit symbol. The payload length must be known separately to remove this padding. Samples must form a one-dimensional array of complete, aligned symbols, and *fs* must be a positive integer multiple of the configured bandwidth. The transmitter and receiver must use the same bandwidth and spreading factor.
 
 Use *set_bandwidth* and *set_spreading_factor* to change the configuration; both update the derived timing and uncoded bit rate. The corresponding values are available through *get_bandwidth*, *get_spreading_factor*, and *get_baudrate*.
+
+For LoRa, *get_baudrate* returns the uncoded bit rate in bits per second, calculated as ``sf * bw / 2**sf``. This value is derived from the configuration: calling *set_baudrate* raises *ValueError* without changing it. Adjust the bandwidth or spreading factor to change the bit rate.

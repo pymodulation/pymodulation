@@ -51,6 +51,20 @@ class LoRa(Modulation):
         self.set_bandwidth(bw)
         self.set_spreading_factor(sf)
 
+    def set_baudrate(self, baud):
+        """
+        Reject direct bit-rate configuration; LoRa derives it from BW and SF.
+
+        :param baud: Requested bit rate in bps (not applied).
+        :type: int
+
+        :raises ValueError: Always; use set_bandwidth or set_spreading_factor.
+        """
+        raise ValueError(
+            "LoRa bit rate is derived from bandwidth and spreading factor; "
+            "use set_bandwidth() or set_spreading_factor() instead"
+        )
+
     def set_bandwidth(self, bw):
         """
         Sets the bandwidth.

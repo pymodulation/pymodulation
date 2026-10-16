@@ -71,6 +71,31 @@ def test_empty_and_default():
     assert modem.demodulate(samples, fs) == []
     assert len(modem.modulate([0])[0]) == 256 * _LORA_DEFAULT_OVERSAMPLING_FACTOR
 
+@pytest.mark.parametrize('requested_rate', [1000, 0, -1, np.nan, 7 * 125000 / 128])
+def test_set_baudrate_rejected_without_changing_modulation(requested_rate):
+    modem = LoRa(125000, 7)
+    before, fs, duration = modem.modulate([0xA5], 1)
+    with pytest.raises(ValueError, match=r'use set_bandwidth\(\) or set_spreading_factor\(\)'):
+        modem.set_baudrate(requested_rate)
+    assert modem.get_baudrate() == pytest.approx(7 * 125000 / 128)
+    assert modem.get_bandwidth() == 125000
+    assert modem.get_spreading_factor() == 7
+    after, new_fs, new_duration = modem.modulate([0xA5], 1)
+    np.testing.assert_array_equal(after, before)
+    assert (new_fs, new_duration) == (fs, duration)
+
+def test_bandwidth_and_spreading_factor_independently_update_bit_rate():
+    modem = LoRa(125000, 7)
+    modem.set_bandwidth(250000)
+    assert modem.get_baudrate() == pytest.approx(7 * 250000 / 128)
+    modem.set_spreading_factor(9)
+    assert modem.get_baudrate() == pytest.approx(9 * 250000 / 512)
+    samples, fs, duration = modem.modulate([0xA5], 2)
+    assert fs == 500000
+    assert duration == pytest.approx(512 / 250000)
+    assert len(samples) / fs == pytest.approx(duration)
+    assert modem.demodulate(samples, fs) == [1, 0, 1, 0, 0, 1, 0, 1, 0]
+
 @pytest.mark.parametrize('bw,sf', [(0, 7), (-1, 7), (np.nan, 7), (np.inf, 7), (125000, 6), (125000, 13), (125000, 7.5)])
 def test_invalid_configuration(bw, sf):
     with pytest.raises(ValueError):
