@@ -30,6 +30,9 @@ The following modulations are currently supported:
 
 * GFSK/GMSK
 * BPSK
+* ASK/OOK
+* QPSK
+* LoRa
 
 ## Dependencies
 
