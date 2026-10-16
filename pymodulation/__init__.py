@@ -27,3 +27,4 @@ from pymodulation.ook import OOK
 from pymodulation.bpsk import BPSK
 from pymodulation.gfsk import GFSK
 from pymodulation.gmsk import GMSK
+from pymodulation.lora import LoRa
