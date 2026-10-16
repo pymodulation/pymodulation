@@ -85,3 +85,31 @@ GMSK
 Gaussian Minimum Shift Keying (GMSK) is a continuous-phase modulation scheme derived from Frequency Shift Keying (FSK), where the digital signal is filtered using a Gaussian filter before modulation. This filtering smooths the phase transitions, resulting in a nearly constant envelope and significantly reduced spectral sidelobes compared to traditional FSK. The key feature of GMSK is its ability to achieve high spectral efficiency while maintaining low out-of-band emissions, making it ideal for bandwidth-constrained wireless systems.  
 
 A notable application of GMSK is in the Global System for Mobile Communications (GSM), where it was chosen for its robustness against interference and efficient use of available spectrum. The modulation's constant envelope allows for the use of highly efficient nonlinear power amplifiers, reducing power consumption in mobile devices. Additionally, GMSK's resistance to multipath fading and phase noise enhances performance in challenging radio environments. Despite its slightly higher complexity in demodulation compared to simpler FSK schemes, GMSK remains a widely adopted modulation technique due to its excellent balance between spectral efficiency, power efficiency, and reliability in wireless communication systems.
+
+
+LoRa
+====
+
+LoRa uses Chirp Spread Spectrum (CSS) modulation, representing each symbol with a cyclically shifted chirp whose frequency sweeps across the configured bandwidth. The spreading factor (SF) determines the number of bits per uncoded symbol and the number of chips in each chirp.
+
+The timing and uncoded bit rate used by the *LoRa* class are:
+
+.. math::
+
+    T_c = \frac{1}{BW}, \qquad
+    T_{sym} = \frac{2^{SF}}{BW}, \qquad
+    R_b = \frac{SF \cdot BW}{2^{SF}}
+
+where:
+
+* :math:`BW` is the bandwidth in Hz;
+* :math:`SF` is the spreading factor, an integer from 7 to 12;
+* :math:`T_c` is the chip period in seconds;
+* :math:`T_{sym}` is the symbol duration in seconds;
+* :math:`R_b` is the uncoded bit rate in bits per second, before accounting for final-symbol padding.
+
+At a fixed bandwidth, increasing the spreading factor increases symbol duration and reduces the uncoded bit rate. The oversampling factor :math:`L` specifies samples per chip, giving a sample rate of :math:`f_s = L \cdot BW` and :math:`L \cdot 2^{SF}` samples per symbol.
+
+PyModulation implements raw chirp modulation and FFT-based demodulation. Input bytes are unpacked most significant bit first into SF-bit symbols, with zeros added to complete the final symbol. The receiver dechirps each symbol and selects the strongest FFT bin to recover its bits.
+
+This implementation does not include packet framing, whitening, interleaving, or forward error correction. It expects symbol-aligned samples without a frequency offset and does not implement synchronization or frequency-offset correction. It therefore provides a raw modulation building block rather than a complete LoRa or LoRaWAN packet transceiver.

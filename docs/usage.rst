@@ -124,3 +124,34 @@ This modulation can be used in a manner almost identical to GFSK modulation, wit
     bits, bb_sig = mod.demodulate(fs, samples)
 
     print("Demodulated bits:", list(map(int, bits)))
+
+
+LoRa
+====
+
+The *LoRa* class takes a positive bandwidth in Hz and a spreading factor from 7 to 12. The *modulate* method accepts integer bytes from 0 to 255 and an optional positive integer oversampling factor *L* (samples per chip, default 100). It returns complex baseband IQ samples, the sample rate in samples per second, and the transmission duration in seconds, including final-symbol padding.
+
+.. code-block:: python
+
+    from pymodulation import LoRa
+
+    mod = LoRa(bw=125000, sf=7)
+    data = [0x48, 0x65, 0x6C, 0x6C, 0x6F]  # "Hello"
+
+    samples, fs, dur = mod.modulate(data, L=4)
+    print("Sample rate:", fs)
+    print("Duration:", dur)
+
+    bits = mod.demodulate(samples, fs)
+    # Use the known payload length to remove final-symbol padding.
+    bits = bits[:len(data) * 8]
+    recovered_data = [
+        int("".join(map(str, bits[i:i + 8])), 2)
+        for i in range(0, len(bits), 8)
+    ]
+    print("Demodulated data:", recovered_data)
+    assert recovered_data == data
+
+The *demodulate* method returns a list of bits, including any zeros used to pad the final SF-bit symbol. The payload length must be known separately to remove this padding. Samples must form a one-dimensional array of complete, aligned symbols, and *fs* must be a positive integer multiple of the configured bandwidth. The transmitter and receiver must use the same bandwidth and spreading factor.
+
+Use *set_bandwidth* and *set_spreading_factor* to change the configuration; both update the derived timing and uncoded bit rate. The corresponding values are available through *get_bandwidth*, *get_spreading_factor*, and *get_baudrate*.
