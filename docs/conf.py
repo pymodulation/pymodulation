@@ -26,7 +26,7 @@ import sphinx_rtd_theme
 project = 'PyModulation'
 copyright = 'Copyright The PyModulation Contributors'
 author = 'PyModulation Developers'
-release = 'v0.2'
+release = 'v0.3'
 
 # General configuration
 extensions = [
