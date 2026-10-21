@@ -33,6 +33,7 @@ The following modulations are currently supported:
 * ASK/OOK
 * QPSK
 * LoRa
+* QAM
 
 ## Dependencies
 

@@ -29,3 +29,4 @@ from pymodulation.gfsk import GFSK
 from pymodulation.gmsk import GMSK
 from pymodulation.qpsk import QPSK
 from pymodulation.lora import LoRa
+from pymodulation.qam import QAM
