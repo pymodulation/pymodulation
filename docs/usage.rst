@@ -187,3 +187,62 @@ The *demodulate* method returns a list of bits, including any zeros used to pad 
 Use *set_bandwidth* and *set_spreading_factor* to change the configuration; both update the derived timing and uncoded bit rate. The corresponding values are available through *get_bandwidth*, *get_spreading_factor*, and *get_baudrate*.
 
 For LoRa, *get_baudrate* returns the uncoded bit rate in bits per second, calculated as ``sf * bw / 2**sf``. This value is derived from the configuration: calling *set_baudrate* raises *ValueError* without changing it. Adjust the bandwidth or spreading factor to change the bit rate.
+
+.. _qam-usage:
+
+QAM
+===
+
+Use ``QAM(order, baud)`` with a square constellation order (4, 16, 64, 256, ...) and a finite positive bit rate in bps. The optional ``sps`` argument specifies positive integer samples per symbol (default 100). Input values must be integer bytes from 0 to 255.
+
+Modulation and demodulation
+***************************
+
+The following example transmits bytes using 16-QAM and recovers them without channel noise:
+
+.. code-block:: python
+
+    import numpy as np
+    from pymodulation import QAM
+
+    mod = QAM(order=16, baud=1200)
+    data = [0x48, 0x65, 0x6C, 0x6C, 0x6F]  # "Hello"
+    samples, fs, duration = mod.modulate(data, sps=20)
+
+    bits, nrz = mod.demodulate(samples, fs)
+    # The payload length is needed to remove final-symbol padding.
+    payload_bits = bits[:len(data) * 8]
+    recovered = np.packbits(np.array(payload_bits, dtype=np.uint8)).tolist()
+
+    print("Sample rate:", fs)  # 6000 S/s
+    print("Duration:", duration)
+    print("Recovered bytes:", recovered)
+    assert recovered == data
+
+``modulate`` returns complex64 baseband IQ samples, the sample rate in S/s, and the duration in seconds. The sample rate is ``sps * baud / log2(order)``. Duration includes any zero padding needed to complete the last symbol; for example, one byte requires two 64-QAM symbols, carrying 12 bits in total.
+
+``demodulate`` returns a tuple of two lists: recovered bits (0 or 1) and their NRZ representation (-1 for zero, +1 for one). Both include final-symbol padding. Samples must be a finite, one-dimensional sequence of complete, aligned symbols, and ``fs`` must be a positive integer multiple of the symbol rate. Configure both ends with the same order and bit rate and use the transmitter's amplitude and phase reference.
+
+Separate I/Q components and real carrier
+****************************************
+
+.. code-block:: python
+
+    import numpy as np
+    from pymodulation import QAM
+
+    mod = QAM(order=64, baud=9600)
+    data = [0xA5, 0x5A]
+    i, q, fs, duration = mod.get_iq(data, sps=20)
+    signal, time, carrier_fs, carrier_duration = mod.modulate_time_domain(
+        data, sps=20
+    )
+
+    assert len(i) == len(q) == len(signal) == len(time)
+    assert (fs, duration) == (carrier_fs, carrier_duration)
+    assert np.isrealobj(signal)
+    print("Carrier signal samples:", signal[:10])
+
+``get_iq`` returns I samples, Q samples, sample rate, and duration. ``modulate_time_domain`` returns the real carrier signal, time values in seconds, sample rate, and duration. Its carrier frequency equals the symbol rate; choose ``sps > 2`` to sample above the carrier's Nyquist rate. Pass complex baseband IQ samples to ``demodulate``; the real carrier signal requires downconversion first.
+
+Use ``set_order`` and ``set_baudrate`` to change the configuration, and ``get_order`` and ``get_baudrate`` to inspect it.
