@@ -133,3 +133,30 @@ At a fixed bandwidth, increasing the spreading factor increases symbol duration 
 PyModulation implements raw chirp modulation and FFT-based demodulation. Input bytes are unpacked most significant bit first into SF-bit symbols, with zeros added to complete the final symbol. The receiver dechirps each symbol and selects the strongest FFT bin to recover its bits.
 
 This implementation does not include packet framing, whitening, interleaving, or forward error correction. It expects symbol-aligned samples without a frequency offset and does not implement synchronization or frequency-offset correction. It therefore provides a raw modulation building block rather than a complete LoRa or LoRaWAN packet transceiver.
+
+QAM
+===
+
+Quadrature Amplitude Modulation (QAM) conveys information through the amplitudes of two orthogonal carrier components: in-phase (I) and quadrature (Q). Each pair of amplitudes defines a point in a complex constellation. PyModulation implements square QAM with an order :math:`M` that is a power of four, such as 4, 16, 64, or 256.
+
+The complex baseband symbol and corresponding real carrier signal are:
+
+.. math::
+
+    x_k = I_k + jQ_k, \qquad
+    s(t) = I_k \cos(2\pi f_c t) - Q_k \sin(2\pi f_c t)
+
+Each symbol carries :math:`b = \log_2 M` bits. The constructor parameter ``baud`` denotes the bit rate :math:`R_b` in bits per second, giving:
+
+.. math::
+
+    R_s = \frac{R_b}{\log_2 M}, \qquad
+    f_s = \mathrm{sps} \cdot R_s
+
+For example, 16-QAM at 1200 bps transmits 300 symbols per second. With 20 samples per symbol, the sample rate is 6000 S/s.
+
+Input bytes are serialized most significant bit first. The first half of each symbol's bits selects I and the second half selects Q. Each axis uses Gray coding, so adjacent constellation points differ by one bit. Axis levels are the odd integers from :math:`-(\sqrt{M}-1)` to :math:`\sqrt{M}-1`, divided by :math:`\sqrt{2(M-1)/3}`. This gives unit average symbol energy over the full constellation, although an individual payload's average power may differ.
+
+The transmitter uses rectangular pulses and adds zero bits to complete the final symbol when necessary. The receiver averages each complete symbol interval and selects the nearest constellation point. It requires symbol-aligned baseband samples with the transmitter's amplitude and phase reference; timing recovery, carrier recovery, and channel equalization are not implemented.
+
+Increasing the order carries more bits per symbol, but reduces the distance between normalized constellation points and makes detection more sensitive to noise. See :ref:`qam-usage` for executable examples.
