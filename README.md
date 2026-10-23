@@ -31,7 +31,7 @@ The following modulations are currently supported:
 * GFSK/GMSK
 * BPSK
 * ASK/OOK
-* QPSK
+* QPSK/OQPSK
 * LoRa
 * QAM
 
@@ -67,7 +67,6 @@ The documentation pages can be built with Sphinx by running the following comman
 If you use PyModulation in your academic work or project, you can cite it:
 
 ```
-}
 @misc{marcelino2026,
     author       = {Marcelino, Gabriel Mariano and Freitas, Carlos Augusto Porto},
     title        = {PyModulation},

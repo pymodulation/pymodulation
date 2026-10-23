@@ -107,6 +107,30 @@ Since each QPSK symbol carries two bits, the symbol rate is half the bit rate fo
 
 Due to its excellent balance between bandwidth efficiency, power efficiency, and implementation complexity, QPSK is extensively used in satellite communications, wireless local area networks (WLANs), cellular communication systems and digital broadcasting standards.
 
+OQPSK
+=====
+
+Offset Quadrature Phase Shift Keying (OQPSK) is a variation of QPSK in which the quadrature (Q) component is delayed by half a symbol relative to the in-phase (I) component. Each symbol still carries two bits, but the two components change at different instants, avoiding simultaneous sign reversals and limiting phase changes to 90 degrees during the overlapping transmission interval.
+
+The complex baseband signal can be expressed as:
+
+.. math::
+
+    x(t) = I(t) + jQ(t - T_s/2), \qquad
+    T_s = \frac{2}{R_b}, \qquad
+    f_s = L \frac{R_b}{2}
+
+where:
+
+* :math:`I(t)` and :math:`Q(t)` are the rectangular pulse trains generated from the QPSK constellation;
+* :math:`T_s` is the symbol duration in seconds;
+* :math:`R_b` is the bit rate in bits per second, configured through ``baud``;
+* :math:`L` is the number of samples per symbol, which must be an even integer greater than or equal to two.
+
+The *OQPSK* class inherits from *QPSK* and uses the same normalized Gray-coded constellation. Input bytes are serialized most significant bit first; the first bit of each pair selects Q and the second selects I. The Q component is delayed by ``L // 2`` samples. Each component is zero outside its transmission interval, and the final half-symbol is retained so that the last Q pulse is transmitted completely.
+
+For a nonempty payload of :math:`N` symbols, the waveform contains :math:`NL + L/2` samples and lasts :math:`(2N + 1)/R_b` seconds. The receiver removes the Q offset before applying QPSK detection. It requires samples aligned to the beginning of I, including the final Q half-symbol, with the transmitter's amplitude and phase reference; synchronization and carrier recovery are not implemented. See :ref:`oqpsk-usage` for a usage example.
+
 LoRa
 ====
 

@@ -156,6 +156,37 @@ The *modulate* method returns the IQ samples of the generated signal, the corres
 
 The constructor parameter *baud* specifies the bit rate in bits per second. Each QPSK symbol carries two bits, so the symbol rate is *baud / 2*. The optional *L* argument to *modulate* specifies samples per symbol (default 100), giving a sample rate of ``L * baud / 2``. For byte input, the output contains ``len(data) * 4 * L`` samples. The *modulate_time_domain* method returns the baseband samples and their integer sample indices.
 
+.. _oqpsk-usage:
+
+OQPSK
+=====
+
+The OQPSK modulation can be used through the *OQPSK* class, which inherits from *QPSK*, using the modulate and demodulate methods. An example of usage can be seen in the code below:
+
+.. code-block:: python
+
+    from pymodulation import OQPSK
+
+    mod = OQPSK(9600)    # Bit rate = 9600 bps; symbol rate = 4800 baud
+
+    data = list(range(100))
+
+    samples, fs, dur = mod.modulate(data, L=100)
+
+    print("IQ Samples:", samples[:10])
+
+    bits = mod.demodulate(samples, fs)
+
+    print("Demodulated bits:", bits)
+    expected_bits = [int(bit) for byte in data for bit in f"{byte:08b}"]
+    assert bits == expected_bits
+
+The *modulate* method returns complex64 baseband IQ samples, the sampling rate in samples per second, and the waveform duration in seconds. The constructor parameter *baud* specifies the bit rate, and each symbol carries two bits. The optional *L* argument specifies samples per symbol (default 100) and must be an even integer greater than or equal to two, giving a sampling rate of ``L * baud / 2``.
+
+The Q component is delayed by ``L // 2`` samples relative to I. For nonempty byte input, the waveform contains ``len(data) * 4 * L + L // 2`` samples and its duration is ``(len(data) * 8 + 1) / baud`` seconds, including the final half-symbol needed to transmit Q completely. Empty input produces empty samples and zero duration. The *modulate_time_domain* method returns the baseband IQ samples and their integer sample indices.
+
+The *demodulate* method compensates for the Q delay and returns a list of recovered bits (0 or 1). Input must be a one-dimensional waveform aligned to the beginning of I, containing complete symbols and the final Q half-symbol. The sample rate must correspond to an even integer number of samples per symbol greater than or equal to two. Invalid sample rates, incomplete waveforms, and invalid *L* values raise *ValueError*. Configure the transmitter and receiver with the same bit rate and use the transmitter's amplitude and phase reference.
+
 LoRa
 ====
 
