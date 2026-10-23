@@ -277,3 +277,74 @@ Separate I/Q components and real carrier
 ``get_iq`` returns I samples, Q samples, sample rate, and duration. ``modulate_time_domain`` returns the real carrier signal, time values in seconds, sample rate, and duration. Its carrier frequency equals the symbol rate; choose ``sps > 2`` to sample above the carrier's Nyquist rate. Pass complex baseband IQ samples to ``demodulate``; the real carrier signal requires downconversion first.
 
 Use ``set_order`` and ``set_baudrate`` to change the configuration, and ``get_order`` and ``get_baudrate`` to inspect it.
+
+.. _apsk-usage:
+
+APSK
+====
+
+Use ``APSK(baud, order=16)`` with a finite positive bit rate in bps and an order of 16 or 32. The optional ``L`` argument specifies positive integer samples per symbol (default 100). Input values must be integer bytes from 0 to 255.
+
+Modulation and demodulation
+***************************
+
+The following example transmits bytes using 16-APSK and recovers them without channel noise:
+
+.. code-block:: python
+
+    import numpy as np
+    from pymodulation import APSK
+
+    mod = APSK(baud=1200, order=16)
+    data = [0x48, 0x65, 0x6C, 0x6C, 0x6F]  # "Hello"
+    samples, fs, duration = mod.modulate(data, L=20)
+
+    bits = mod.demodulate(samples, fs)
+    payload_bits = bits[:len(data) * 8]
+    recovered = np.packbits(np.array(payload_bits, dtype=np.uint8)).tolist()
+
+    print("Sample rate:", fs)  # 6000 S/s
+    print("Duration:", duration)
+    print("Recovered bytes:", recovered)
+    assert recovered == data
+
+``modulate`` returns complex64 baseband IQ samples, the sample rate in S/s, and duration in seconds. The sample rate is ``L * baud / log2(order)``. Duration includes any final-symbol padding. ``demodulate`` returns a list of bits, including padding; use the original payload length to remove it before converting back to bytes.
+
+For example, one byte requires two 32-APSK symbols, carrying ten bits in total:
+
+.. code-block:: python
+
+    from pymodulation import APSK
+
+    mod = APSK(baud=1200, order=32)
+    samples, fs, duration = mod.modulate([0xA5], L=20)
+    bits = mod.demodulate(samples, fs)
+
+    assert bits == [1, 0, 1, 0, 0, 1, 0, 1, 0, 0]
+    assert len(samples) == 40
+    assert fs == 4800
+    assert abs(duration - 10 / 1200) < 1e-12
+
+Samples must form a finite, one-dimensional sequence of complete, aligned symbols. The sample rate must be a positive integer multiple of the symbol rate. Configure both ends with the same order and bit rate, and use the transmitter's amplitude and phase reference. Invalid bytes, orders, bit rates, oversampling factors, sample rates or incomplete symbol intervals raise ``ValueError``.
+
+Baseband waveform
+*****************
+
+``modulate_time_domain`` returns rectangular baseband IQ samples and integer sample indices starting at zero. Divide the indices by the sample rate to obtain time in seconds:
+
+.. code-block:: python
+
+    import numpy as np
+    from pymodulation import APSK
+
+    mod = APSK(baud=1200, order=16)
+    data = [0xA5, 0x5A]
+    waveform, indices = mod.modulate_time_domain(data, L=20)
+    samples, fs, duration = mod.modulate(data, L=20)
+    time = indices / fs
+
+    np.testing.assert_allclose(waveform, samples)
+    assert len(time) == len(samples)
+    assert time[0] == 0
+
+Use ``set_order`` and ``set_baudrate`` to change the configuration, and ``get_order`` and ``get_baudrate`` to inspect it. The full example in ``examples/example_apsk.py`` adds AWGN, recovers the bytes and plots the received samples alongside the ideal constellation points.
