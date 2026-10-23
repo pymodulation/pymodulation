@@ -34,6 +34,7 @@ The following modulations are currently supported:
 * QPSK/OQPSK
 * LoRa
 * QAM
+* APSK
 
 ## Dependencies
 

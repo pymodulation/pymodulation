@@ -184,3 +184,30 @@ Input bytes are serialized most significant bit first. The first half of each sy
 The transmitter uses rectangular pulses and adds zero bits to complete the final symbol when necessary. The receiver averages each complete symbol interval and selects the nearest constellation point. It requires symbol-aligned baseband samples with the transmitter's amplitude and phase reference; timing recovery, carrier recovery, and channel equalization are not implemented.
 
 Increasing the order carries more bits per symbol, but reduces the distance between normalized constellation points and makes detection more sensitive to noise. See :ref:`qam-usage` for executable examples.
+
+APSK
+====
+
+Amplitude and Phase Shift Keying (APSK) encodes information using both the amplitude and phase of complex symbols arranged on concentric rings. PyModulation supports 16-APSK with 4 and 12 points on two rings, and 32-APSK with 4, 12 and 16 points on three rings.
+
+For ring index :math:`r`, starting at one, and point index :math:`k`, starting at zero, the constellation is:
+
+.. math::
+
+    x_{r,k} = \frac{r}{\sqrt{E}}\exp\left(j\frac{2\pi k + \pi}{n_r}\right),
+    \qquad E = \frac{1}{M}\sum_r n_r r^2
+
+Here :math:`n_r` is the number of points on ring :math:`r`, and :math:`M` is the total constellation size. Relative radii are (1, 2) for 16-APSK and (1, 2, 3) for 32-APSK. Normalization gives unit average energy over all constellation points. This implementation uses a generic APSK constellation and binary labeling, rather than the DVB-S2 mapping.
+
+Input bytes are serialized most significant bit first into groups of :math:`b = \log_2 M` bits. Natural binary labels select points counterclockwise on each ring, from the innermost ring outward. The transmitter repeats each symbol for :math:`L` samples and adds zero bits to complete the final symbol when necessary.
+
+The constructor parameter ``baud`` denotes the bit rate :math:`R_b`, so the symbol rate, sample rate and waveform duration are:
+
+.. math::
+
+    R_s = \frac{R_b}{b}, \qquad f_s = L R_s, \qquad
+    T = \frac{N b}{R_b}
+
+Here :math:`N` is the number of symbols, including any final-symbol padding. For example, 16-APSK at 1200 bps transmits 300 symbols per second, giving 6000 S/s with 20 samples per symbol.
+
+The receiver averages each complete symbol interval and selects the nearest constellation point by Euclidean distance. It retains padding bits and requires aligned baseband samples with the transmitter's amplitude and phase reference. Timing recovery, carrier recovery and channel equalization are not implemented. See :ref:`apsk-usage` for executable examples.
