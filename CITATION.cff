@@ -1,0 +1,44 @@
+cff-version: 1.2.0
+message: >-
+  If you use PyModulation in your research or project,
+  please cite this software using the information below.
+
+type: software
+
+title: "PyModulation"
+abstract: >-
+  PyModulation is an open-source Python library that
+  implements digital modulation and demodulation
+  techniques, with a focus on Software-Defined Radio
+  (SDR) applications. It provides a consistent and
+  extensible interface for signal processing,
+  simulation, prototyping, and experimental
+  communication systems.
+
+authors:
+  - family-names: Marcelino
+    given-names: Gabriel Mariano
+
+  - family-names: Freitas
+    given-names: Carlos Augusto Porto
+
+repository-code: https://github.com/pymodulation/pymodulation
+url: https://pymodulation.github.io/pymodulation/
+
+doi: 10.5281/zenodo.18202697
+
+license: LGPL-3.0-only
+
+keywords:
+  - Digital Modulation
+  - Digital Demodulation
+  - Software-Defined Radio
+  - SDR
+  - Digital Communications
+  - Signal Processing
+  - Python
+  - GFSK
+  - GMSK
+  - BPSK
+  - QPSK
+  - LoRa

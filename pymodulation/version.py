@@ -24,7 +24,9 @@ __author__      = "Gabriel Mariano Marcelino"
 __copyright__   = "Copyright The PyModulation Contributors"
 __credits__     = ["Gabriel Mariano Marcelino", "Carlos Augusto Porto Freitas"]
 __license__     = "LGPLv3"
+# x-release-please-start-version
 __version__     = "0.3.0"
+# x-release-please-end
 __maintainer__  = "Gabriel Mariano Marcelino"
 __email__       = "contact@gabrielmm.com"
 __status__      = "Production"
