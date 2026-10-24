@@ -44,8 +44,8 @@ class TestBaudrate:
 
     def test_set_baudrate_zero(self, bpsk):
         """Baudrate of 0 is technically settable; callers must avoid division by zero."""
-        bpsk.set_baudrate(0)
-        assert bpsk.get_baudrate() == 0
+        with pytest.raises(ValueError):
+            bpsk.set_baudrate(0)
 
 # 2. _int_list_to_bit_list (private helper — tested via known byte values)
 class TestIntListToBitList:

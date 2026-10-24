@@ -20,6 +20,8 @@
 #
 #
 
+import numpy as np
+
 class Modulation:
     """
     Generic modulation class.
@@ -46,7 +48,12 @@ class Modulation:
         :type: int
 
         :return: None.
+
+        :raises ValueError: If the bit rate is not finite and positive.
         """
+        if (isinstance(baud, (bool, np.bool_)) or not isinstance(baud, (int, float, np.integer, np.floating)) or not np.isfinite(baud) or baud <= 0):
+            raise ValueError("Bit rate must be a finite positive number!")
+
         self._baudrate = baud
 
     def get_baudrate(self):

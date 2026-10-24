@@ -51,22 +51,6 @@ class QAM(Modulation):
         super().__init__(baud)
         self.set_order(order)
 
-    def set_baudrate(self, baud):
-        """
-        Set a finite positive bit rate in bps.
-
-        :param baud: New bit rate in bps.
-        :type baud: int or float
-
-        :returns: None.
-        :rtype: None
-
-        :raises ValueError: If the bit rate is not finite and positive.
-        """
-        if (isinstance(baud, (bool, np.bool_)) or not isinstance(baud, (int, float, np.integer, np.floating)) or not np.isfinite(baud) or baud <= 0):
-            raise ValueError("Bit rate must be a finite positive number")
-        super().set_baudrate(baud)
-
     def set_order(self, order):
         """
         Set the constellation size to a power of four, at least four.

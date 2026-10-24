@@ -53,23 +53,6 @@ class APSK(Modulation):
         super().__init__(baud)
         self.set_order(order)
 
-    def set_baudrate(self, baud):
-        """
-        Set a finite positive bit rate in bits per second.
-
-        :param baud: New bit rate in bits per second.
-        :type baud: int or float
-
-        :return: None.
-        :rtype: None
-
-        :raises ValueError: If the bit rate is not finite and positive.
-        """
-        if (isinstance(baud, (bool, np.bool_)) or not isinstance(baud, (int, float, np.integer, np.floating)) or not np.isfinite(baud) or baud <= 0):
-            raise ValueError("Bit rate must be a finite positive number")
-
-        super().set_baudrate(baud)
-
     def set_order(self, order):
         """
         Set the APSK constellation size to 16 or 32.

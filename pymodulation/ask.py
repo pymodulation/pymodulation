@@ -53,20 +53,6 @@ class ASK(Modulation):
 
         self.set_order(order)
 
-    def set_baudrate(self, baud):
-        """
-        Set a finite positive bit rate in bits per second.
-
-        :param baud: The new baudrate in bps.
-        :type: int
-
-        :return None
-        """
-        if (not isinstance(baud, (int, float, np.integer, np.floating)) or isinstance(baud, (bool, np.bool_)) or not np.isfinite(baud) or baud <= 0):
-            raise ValueError("Bit rate must be a finite positive number")
-
-        super().set_baudrate(baud)
-
     def _validate_sps(self, sps):
         """
         """
