@@ -28,4 +28,7 @@ from pymodulation.bpsk import BPSK
 from pymodulation.gfsk import GFSK
 from pymodulation.gmsk import GMSK
 from pymodulation.qpsk import QPSK
+from pymodulation.oqpsk import OQPSK
 from pymodulation.lora import LoRa
+from pymodulation.qam import QAM
+from pymodulation.apsk import APSK

@@ -107,6 +107,30 @@ Since each QPSK symbol carries two bits, the symbol rate is half the bit rate fo
 
 Due to its excellent balance between bandwidth efficiency, power efficiency, and implementation complexity, QPSK is extensively used in satellite communications, wireless local area networks (WLANs), cellular communication systems and digital broadcasting standards.
 
+OQPSK
+=====
+
+Offset Quadrature Phase Shift Keying (OQPSK) is a variation of QPSK in which the quadrature (Q) component is delayed by half a symbol relative to the in-phase (I) component. Each symbol still carries two bits, but the two components change at different instants, avoiding simultaneous sign reversals and limiting phase changes to 90 degrees during the overlapping transmission interval.
+
+The complex baseband signal can be expressed as:
+
+.. math::
+
+    x(t) = I(t) + jQ(t - T_s/2), \qquad
+    T_s = \frac{2}{R_b}, \qquad
+    f_s = L \frac{R_b}{2}
+
+where:
+
+* :math:`I(t)` and :math:`Q(t)` are the rectangular pulse trains generated from the QPSK constellation;
+* :math:`T_s` is the symbol duration in seconds;
+* :math:`R_b` is the bit rate in bits per second, configured through ``baud``;
+* :math:`L` is the number of samples per symbol, which must be an even integer greater than or equal to two.
+
+The *OQPSK* class inherits from *QPSK* and uses the same normalized Gray-coded constellation. Input bytes are serialized most significant bit first; the first bit of each pair selects Q and the second selects I. The Q component is delayed by ``L // 2`` samples. Each component is zero outside its transmission interval, and the final half-symbol is retained so that the last Q pulse is transmitted completely.
+
+For a nonempty payload of :math:`N` symbols, the waveform contains :math:`NL + L/2` samples and lasts :math:`(2N + 1)/R_b` seconds. The receiver removes the Q offset before applying QPSK detection. It requires samples aligned to the beginning of I, including the final Q half-symbol, with the transmitter's amplitude and phase reference; synchronization and carrier recovery are not implemented. See :ref:`oqpsk-usage` for a usage example.
+
 LoRa
 ====
 
@@ -133,3 +157,57 @@ At a fixed bandwidth, increasing the spreading factor increases symbol duration 
 PyModulation implements raw chirp modulation and FFT-based demodulation. Input bytes are unpacked most significant bit first into SF-bit symbols, with zeros added to complete the final symbol. The receiver dechirps each symbol and selects the strongest FFT bin to recover its bits.
 
 This implementation does not include packet framing, whitening, interleaving, or forward error correction. It expects symbol-aligned samples without a frequency offset and does not implement synchronization or frequency-offset correction. It therefore provides a raw modulation building block rather than a complete LoRa or LoRaWAN packet transceiver.
+
+QAM
+===
+
+Quadrature Amplitude Modulation (QAM) conveys information through the amplitudes of two orthogonal carrier components: in-phase (I) and quadrature (Q). Each pair of amplitudes defines a point in a complex constellation. PyModulation implements square QAM with an order :math:`M` that is a power of four, such as 4, 16, 64, or 256.
+
+The complex baseband symbol and corresponding real carrier signal are:
+
+.. math::
+
+    x_k = I_k + jQ_k, \qquad
+    s(t) = I_k \cos(2\pi f_c t) - Q_k \sin(2\pi f_c t)
+
+Each symbol carries :math:`b = \log_2 M` bits. The constructor parameter ``baud`` denotes the bit rate :math:`R_b` in bits per second, giving:
+
+.. math::
+
+    R_s = \frac{R_b}{\log_2 M}, \qquad
+    f_s = \mathrm{sps} \cdot R_s
+
+For example, 16-QAM at 1200 bps transmits 300 symbols per second. With 20 samples per symbol, the sample rate is 6000 S/s.
+
+Input bytes are serialized most significant bit first. The first half of each symbol's bits selects I and the second half selects Q. Each axis uses Gray coding, so adjacent constellation points differ by one bit. Axis levels are the odd integers from :math:`-(\sqrt{M}-1)` to :math:`\sqrt{M}-1`, divided by :math:`\sqrt{2(M-1)/3}`. This gives unit average symbol energy over the full constellation, although an individual payload's average power may differ.
+
+The transmitter uses rectangular pulses and adds zero bits to complete the final symbol when necessary. The receiver averages each complete symbol interval and selects the nearest constellation point. It requires symbol-aligned baseband samples with the transmitter's amplitude and phase reference; timing recovery, carrier recovery, and channel equalization are not implemented.
+
+Increasing the order carries more bits per symbol, but reduces the distance between normalized constellation points and makes detection more sensitive to noise. See :ref:`qam-usage` for executable examples.
+
+APSK
+====
+
+Amplitude and Phase Shift Keying (APSK) encodes information using both the amplitude and phase of complex symbols arranged on concentric rings. PyModulation supports 16-APSK with 4 and 12 points on two rings, and 32-APSK with 4, 12 and 16 points on three rings.
+
+For ring index :math:`r`, starting at one, and point index :math:`k`, starting at zero, the constellation is:
+
+.. math::
+
+    x_{r,k} = \frac{r}{\sqrt{E}}\exp\left(j\frac{2\pi k + \pi}{n_r}\right),
+    \qquad E = \frac{1}{M}\sum_r n_r r^2
+
+Here :math:`n_r` is the number of points on ring :math:`r`, and :math:`M` is the total constellation size. Relative radii are (1, 2) for 16-APSK and (1, 2, 3) for 32-APSK. Normalization gives unit average energy over all constellation points. This implementation uses a generic APSK constellation and binary labeling, rather than the DVB-S2 mapping.
+
+Input bytes are serialized most significant bit first into groups of :math:`b = \log_2 M` bits. Natural binary labels select points counterclockwise on each ring, from the innermost ring outward. The transmitter repeats each symbol for :math:`L` samples and adds zero bits to complete the final symbol when necessary.
+
+The constructor parameter ``baud`` denotes the bit rate :math:`R_b`, so the symbol rate, sample rate and waveform duration are:
+
+.. math::
+
+    R_s = \frac{R_b}{b}, \qquad f_s = L R_s, \qquad
+    T = \frac{N b}{R_b}
+
+Here :math:`N` is the number of symbols, including any final-symbol padding. For example, 16-APSK at 1200 bps transmits 300 symbols per second, giving 6000 S/s with 20 samples per symbol.
+
+The receiver averages each complete symbol interval and selects the nearest constellation point by Euclidean distance. It retains padding bits and requires aligned baseband samples with the transmitter's amplitude and phase reference. Timing recovery, carrier recovery and channel equalization are not implemented. See :ref:`apsk-usage` for executable examples.
