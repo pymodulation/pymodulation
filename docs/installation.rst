@@ -2,19 +2,60 @@
 Installation
 ************
 
-The simplest way to install the PyModulation library is doing it from the PyPI repository [1]_:
+.. note::
 
-::
+    Python 3.12 is used to run the library tests in continuous integration. Compatibility with earlier Python versions has not been validated!
 
-    pip install pymodulation
+Installing from PyPI
+====================
 
-It is also possible to install directly from source files available in the git repository [2]_:
+Install the published package from PyPI [1]_:
 
-::
+.. code-block:: bash
 
-    python setup.py install
+    python -m pip install pymodulation
 
-With the github releases, there is also some ready to install distribuition packages (*.rpm*, *.tar.gz*, etc.).
+Installing from Source
+======================
+
+Clone the Git repository [2]_ and install the library from its root directory:
+
+.. code-block:: bash
+
+    git clone https://github.com/pymodulation/pymodulation.git
+    cd pymodulation
+    python -m pip install .
+
+Development Installation
+========================
+
+From the repository root, install in editable mode with dependencies for tests,
+examples and documentation:
+
+.. code-block:: bash
+
+    python -m pip install -e ".[test,examples,docs]"
+
+Editable mode makes local source changes available without reinstalling. Optional dependency groups can also be installed individually, for example
+``python -m pip install -e ".[examples]"``.
+
+Building the Documentation
+==========================
+
+To install only the library and its documentation dependencies, run the following
+command from the repository root:
+
+.. code-block:: bash
+
+    python -m pip install ".[docs]"
+
+Build the HTML documentation with Sphinx:
+
+.. code-block:: bash
+
+    python -m sphinx -W --keep-going -b html docs /tmp/pymodulation-docs
+
+Open ``/tmp/pymodulation-docs/index.html`` to view the result.
 
 References
 ==========

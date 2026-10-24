@@ -43,9 +43,25 @@ The following modulations are currently supported:
 
 ## Installing
 
-This library can be installed directly from the source files:
+Python 3.12 is used to run the library tests in continuous integration. Compatibility with earlier Python versions has not been validated.
 
-* ```python setup.py install```
+Install the published package from PyPI:
+
+```bash
+python -m pip install pymodulation
+```
+
+NumPy and SciPy are installed automatically as dependencies.
+
+### Installing from Source
+
+Clone the repository and install the library from its root directory:
+
+```bash
+git clone https://github.com/pymodulation/pymodulation.git
+cd pymodulation
+python -m pip install .
+```
 
 ## Documentation
 
