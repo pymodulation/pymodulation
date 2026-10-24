@@ -6,7 +6,7 @@
     <img src="https://img.shields.io/pypi/v/pymodulation?style=for-the-badge">
 </a>
 <a href="https://doi.org/10.5281/zenodo.23409360">
-    <img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo.23409360-blue?style=for-the-badge">
+    <img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo.18202697-blue?style=for-the-badge">
 </a>
 <a href="https://pypi.org/project/pymodulation/">
     <img src="https://img.shields.io/pypi/pyversions/pymodulation?style=for-the-badge">
@@ -74,8 +74,8 @@ If you use PyModulation in your academic work or project, you can cite it:
     month        = oct,
     year         = 2026,
     howpublished = {Zenodo},
-    doi          = {10.5281/zenodo.23409360},
-    url          = {https://doi.org/10.5281/zenodo.23409360},
+    doi          = {10.5281/zenodo.18202697},
+    url          = {https://doi.org/10.5281/zenodo.18202697},
 }
 ```
 
